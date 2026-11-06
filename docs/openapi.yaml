@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: Controle de despesas pessoais
+  version: 1.0.0
+  description: API simples para registrar despesas e consultá-las por mês.
+servers:
+  - url: http://localhost:3000
+paths:
+  /expenses:
+    post:
+      summary: Registra uma despesa
+      operationId: createExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseInput'
+            example:
+              amountCents: 1234
+              description: Almoço
+              occurredOn: '2026-11-06'
+      responses:
+        '201':
+          description: Despesa criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          description: Corpo inválido ou regra de domínio não atendida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Lista despesas e total do mês
+      operationId: listMonthlyExpenses
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: Mês consultado no formato YYYY-MM
+          schema:
+            type: string
+            pattern: '^(?!0000-)\d{4}-(0[1-9]|1[0-2])$'
+          example: '2026-11'
+      responses:
+        '200':
+          description: Despesas do mês e total em centavos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlyExpenses'
+        '400':
+          description: Parâmetro month ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /health:
+    get:
+      summary: Verifica se a API responde
+      operationId: health
+      responses:
+        '200':
+          description: Serviço respondendo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+  /metrics:
+    get:
+      summary: Expõe métricas Prometheus
+      operationId: metrics
+      responses:
+        '200':
+          description: Métricas no formato de exposição Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    ExpenseInput:
+      type: object
+      required: [amountCents, description, occurredOn]
+      properties:
+        amountCents:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Valor inteiro em centavos
+        description:
+          type: string
+          minLength: 1
+          maxLength: 200
+        occurredOn:
+          type: string
+          format: date
+          pattern: '^(?!0000-)\d{4}-\d{2}-\d{2}$'
+    Expense:
+      allOf:
+        - $ref: '#/components/schemas/ExpenseInput'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    MonthlyExpenses:
+      type: object
+      required: [month, expenses, totalCents]
+      properties:
+        month:
+          type: string
+          pattern: '^(?!0000-)\d{4}-(0[1-9]|1[0-2])$'
+        expenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+        totalCents:
+          type: integer
+          minimum: 0
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
