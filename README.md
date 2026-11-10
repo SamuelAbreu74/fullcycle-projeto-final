@@ -1,4 +1,4 @@
-# Controle de despesas pessoais
+# Controle de despesas pessoais - Projeto Nível B
 
 API HTTP de domínio único para registrar despesas e consultar lançamentos por mês. O projeto prioriza um fluxo pequeno, testável e executável localmente.
 
